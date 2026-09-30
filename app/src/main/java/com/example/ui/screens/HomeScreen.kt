@@ -74,6 +74,7 @@ fun HomeScreen(
     onTestPowerMenu: () -> Unit,
     onEnableAccessibility: () -> Unit,
     onEnableDeviceAdmin: () -> Unit,
+    onFixRestrictedSettings: () -> Unit,
     onVerifyFingerprint: () -> Unit,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
@@ -110,7 +111,8 @@ fun HomeScreen(
             isAccessibilityActive = uiState.isAccessibilityEnabled,
             isDeviceAdminActive = uiState.isDeviceAdminEnabled,
             onEnableAccessibility = onEnableAccessibility,
-            onEnableDeviceAdmin = onEnableDeviceAdmin
+            onEnableDeviceAdmin = onEnableDeviceAdmin,
+            onFixRestrictedSettings = onFixRestrictedSettings
         )
 
         Spacer(modifier = Modifier.height(20.dp))

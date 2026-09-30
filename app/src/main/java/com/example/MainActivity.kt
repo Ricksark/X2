@@ -156,6 +156,7 @@ class MainActivity : FragmentActivity() {
                                 onTestPowerMenu = { viewModel.testPowerMenu(this@MainActivity) },
                                 onEnableAccessibility = { openAccessibilitySettings() },
                                 onEnableDeviceAdmin = { openDeviceAdminSettings() },
+                                onFixRestrictedSettings = { openAppInfoSettings() },
                                 onVerifyFingerprint = {
                                     BiometricHelper.authenticate(
                                         activity = this@MainActivity,
@@ -189,6 +190,7 @@ class MainActivity : FragmentActivity() {
                                 onOpenAccessibilitySettings = { openAccessibilitySettings() },
                                 onOpenDeviceAdminSettings = { openDeviceAdminSettings() },
                                 onOpenDefaultAssistantSettings = { openDefaultAssistantSettings() },
+                                onOpenAppInfoSettings = { openAppInfoSettings() },
                                 onPromptBiometric = { onSuccess ->
                                     BiometricHelper.authenticate(
                                         activity = this@MainActivity,
@@ -261,6 +263,18 @@ class MainActivity : FragmentActivity() {
             Toast.makeText(this, "Locate 'Screen Off' and turn the switch ON", Toast.LENGTH_LONG).show()
         } catch (_: Exception) {
             Toast.makeText(this, "Could not open Accessibility Settings", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openAppInfoSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = android.net.Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+            Toast.makeText(this, "Tap 3 dots (⋮) top-right -> 'Allow restricted settings'", Toast.LENGTH_LONG).show()
+        } catch (_: Exception) {
+            Toast.makeText(this, "Could not open App Info settings", Toast.LENGTH_SHORT).show()
         }
     }
 

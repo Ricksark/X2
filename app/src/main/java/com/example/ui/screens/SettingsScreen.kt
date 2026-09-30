@@ -75,6 +75,7 @@ fun SettingsScreen(
     onOpenAccessibilitySettings: () -> Unit,
     onOpenDeviceAdminSettings: () -> Unit,
     onOpenDefaultAssistantSettings: () -> Unit,
+    onOpenAppInfoSettings: () -> Unit,
     onPromptBiometric: (onSuccess: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -145,6 +146,62 @@ fun SettingsScreen(
                         }
                     }
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Android 13+ Restricted Setting Notice & Quick Fix
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, AmberWarning.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = AmberWarning,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Android 13+ 'Restricted Setting' Fix",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "If Android shows 'Restricted setting: For your security, this setting is unavailable' when enabling Screen Off:\n" +
+                            "1. Tap 'Open App Info' below\n" +
+                            "2. Tap the three dots (⋮) in the top-right corner\n" +
+                            "3. Tap 'Allow restricted settings'\n" +
+                            "4. Verify your phone PIN or fingerprint\n" +
+                            "5. Return and toggle Accessibility ON.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = onOpenAppInfoSettings,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("btn_settings_open_app_info")
+                ) {
+                    Text("Open App Info (Tap ⋮ for Restricted Settings)")
+                }
             }
         }
 

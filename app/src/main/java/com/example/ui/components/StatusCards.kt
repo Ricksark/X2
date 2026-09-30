@@ -48,6 +48,7 @@ fun ServiceStatusBanner(
     isDeviceAdminActive: Boolean,
     onEnableAccessibility: () -> Unit,
     onEnableDeviceAdmin: () -> Unit,
+    onFixRestrictedSettings: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isAnyActive = isAccessibilityActive || isDeviceAdminActive
@@ -145,6 +146,20 @@ fun ServiceStatusBanner(
                             .testTag("btn_grant_device_admin")
                     ) {
                         Text("Use Device Administrator Instead")
+                    }
+
+                    if (onFixRestrictedSettings != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = onFixRestrictedSettings,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("btn_fix_restricted_settings")
+                        ) {
+                            Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = AmberWarning)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Seeing 'Restricted setting'? Tap to fix")
+                        }
                     }
                 }
             }
