@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name=".ScreenOffApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApplication">
+
+        <!-- Main Dashboard & Settings Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Fast Transparent Action Activity (for Shortcuts, Assist Button, Widgets, External API) -->
+        <activity
+            android:name=".activity.LockScreenActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Transparent">
+            <!-- Default Digital Assistant Support: Long-press home button / swipe from corner -->
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <!-- Custom third-party and deep link actions -->
+            <intent-filter>
+                <action android:name="com.aistudio.screenoff.ACTION_LOCK" />
+                <action android:name="com.aistudio.screenoff.ACTION_POWER_MENU" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Accessibility Service: Performs GLOBAL_ACTION_LOCK_SCREEN & GLOBAL_ACTION_POWER_DIALOG -->
+        <service
+            android:name=".service.LockAccessibilityService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- Quick Settings Tile: Lock Screen -->
+        <service
+            android:name=".service.LockTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_lock"
+            android:label="Lock Screen"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Quick Settings Tile: Power Menu -->
+        <service
+            android:name=".service.PowerMenuTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_power"
+            android:label="Power Menu"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Device Admin Receiver: Fallback method for older Android versions & uninstallation safety -->
+        <receiver
+            android:name=".receiver.ScreenOffDeviceAdminReceiver"
+            android:description="@string/accessibility_service_description"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_sample" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- App Widget Provider -->
+        <receiver
+            android:name=".widget.ScreenOffWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.aistudio.screenoff.WIDGET_LOCK" />
+                <action android:name="com.aistudio.screenoff.WIDGET_POWER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/screen_off_widget_info" />
+        </receiver>
+
+        <!-- Broadcast Receiver for Notification actions & Third-party integrations -->
+        <receiver
+            android:name=".receiver.ScreenOffActionReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.aistudio.screenoff.ACTION_LOCK" />
+                <action android:name="com.aistudio.screenoff.ACTION_POWER_MENU" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

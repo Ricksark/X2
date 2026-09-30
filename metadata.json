@@ -1,0 +1,6 @@
+{
+  "name": "Screen Off",
+  "description": "Instantly lock your screen without using the power button, with fingerprint unlock support, Quick Settings tile, resizable widgets, power menu access, and digital assistant support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

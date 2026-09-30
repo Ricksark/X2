@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Screen Off</string>
+    <string name="accessibility_service_description">Screen Off uses Accessibility Service solely to perform global actions such as instantly locking the screen or opening the power menu at the user\'s request, without needing the physical power button and preserving biometric unlock.</string>
+</resources>
