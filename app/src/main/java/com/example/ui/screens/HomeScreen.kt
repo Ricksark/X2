@@ -73,7 +73,6 @@ fun HomeScreen(
     onTestLock: () -> Unit,
     onTestPowerMenu: () -> Unit,
     onEnableAccessibility: () -> Unit,
-    onEnableDeviceAdmin: () -> Unit,
     onFixRestrictedSettings: () -> Unit,
     onVerifyFingerprint: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -109,9 +108,7 @@ fun HomeScreen(
         // Service Status Banner
         ServiceStatusBanner(
             isAccessibilityActive = uiState.isAccessibilityEnabled,
-            isDeviceAdminActive = uiState.isDeviceAdminEnabled,
             onEnableAccessibility = onEnableAccessibility,
-            onEnableDeviceAdmin = onEnableDeviceAdmin,
             onFixRestrictedSettings = onFixRestrictedSettings
         )
 

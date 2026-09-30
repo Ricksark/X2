@@ -73,11 +73,11 @@ fun OnboardingDialog(
             body = "We use Android's official Accessibility API Policy solely to execute the global screen lock action. Unlike older Device Administrator locks, this preserves your fingerprint reader unlock so you never have to type your PIN each time."
         ),
         OnboardingStep(
-            title = "Transparency & Full Control",
-            subtitle = "Zero trackers, 100% offline & easy lifecycle control",
+            title = "Biometric & Custom PIN Security",
+            subtitle = "Safe, 100% offline & under 10MB lite footprint",
             icon = Icons.Default.Shield,
             iconColor = AmberWarning,
-            body = "No trackers, no shady permissions, under 3MB footprint. If you ever use Device Administrator on older Android devices, you have full control: simply visit Settings -> Security -> Device administrators -> Uncheck Screen Off anytime to deactivate."
+            body = "Zero trackers, zero invasive permissions, under 3MB download size. Screen Off complies with Android biometric security policy by offering optional in-app Custom PIN lock with fingerprint backup."
         )
     )
 

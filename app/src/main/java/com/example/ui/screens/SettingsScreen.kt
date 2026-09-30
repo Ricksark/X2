@@ -1,10 +1,7 @@
 package com.example.ui.screens
 
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,19 +18,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.Assistant
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.RadioButtonChecked
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,12 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,30 +48,23 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.PreferencesManager
-import com.example.receiver.ScreenOffDeviceAdminReceiver
 import com.example.ui.MainUiState
-import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.EmeraldActive
 
 @Composable
 fun SettingsScreen(
     uiState: MainUiState,
-    onSetLockMethod: (String) -> Unit,
     onSetVibration: (Boolean) -> Unit,
     onSetPersistentNotification: (Boolean) -> Unit,
-    onSetBiometricProtection: (Boolean) -> Unit,
     onSetThemeMode: (String) -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
-    onOpenDeviceAdminSettings: () -> Unit,
     onOpenDefaultAssistantSettings: () -> Unit,
-    onOpenAppInfoSettings: () -> Unit,
-    onPromptBiometric: (onSuccess: () -> Unit) -> Unit,
+    onOpenPinSetup: (PinScreenMode) -> Unit,
+    onToggleBiometricUnlock: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    var showUninstallHelperDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -91,20 +74,146 @@ fun SettingsScreen(
             .testTag("settings_screen_content")
     ) {
         Text(
-            text = "Settings & Controls",
+            text = "Settings & Security",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Black,
             color = MaterialTheme.colorScheme.onBackground
         )
         Text(
-            text = "Preferences, locking engine & device security",
+            text = "App preferences, biometric security & custom PIN",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Section: Lock Method
+        // SECTION 1: Biometric & Custom PIN Security
+        SettingsSectionHeader(title = "App Lock & Security Policy")
+
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = if (uiState.isAppLockEnabled) EmeraldActive.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(20.dp)
+                )
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (uiState.isAppLockEnabled) EmeraldActive.copy(alpha = 0.15f)
+                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = if (uiState.isAppLockEnabled) Icons.Default.Lock else Icons.Default.Security,
+                            contentDescription = null,
+                            tint = if (uiState.isAppLockEnabled) EmeraldActive else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (uiState.isAppLockEnabled) "App Lock Protected" else "Custom PIN Security",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (uiState.isAppLockEnabled) "Secured with PIN + Biometrics" else "Set a PIN to lock app access",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "In compliance with Android biometric security policies, biometric-locked apps must maintain a secure PIN entry fallback when biometrics are unavailable or on device restarts.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 19.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Action buttons for PIN setup
+                if (uiState.isPinSet) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = { onOpenPinSetup(PinScreenMode.CREATE_PIN) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("btn_change_pin")
+                        ) {
+                            Text("Change PIN")
+                        }
+
+                        OutlinedButton(
+                            onClick = { onOpenPinSetup(PinScreenMode.VERIFY_TO_DISABLE) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("btn_remove_pin")
+                        ) {
+                            Text("Turn Off Lock")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Biometric unlock toggle
+                    SettingsToggleRow(
+                        title = "Biometric (Fingerprint) Unlock",
+                        description = "Unlock Screen Off instantly using fingerprint sensor with PIN backup",
+                        icon = Icons.Default.Fingerprint,
+                        checked = uiState.isBiometricUnlockEnabled,
+                        onCheckedChange = onToggleBiometricUnlock,
+                        testTag = "switch_biometric_unlock"
+                    )
+                } else {
+                    Button(
+                        onClick = { onOpenPinSetup(PinScreenMode.CREATE_PIN) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("btn_create_pin")
+                    ) {
+                        Icon(Icons.Default.Pin, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Create Custom Security PIN")
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // SECTION 2: Locking Engine (Clean Accessibility API)
         SettingsSectionHeader(title = "Locking Engine")
 
         Card(
@@ -115,63 +224,16 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                // Method 1: Accessibility
-                MethodOptionRow(
-                    title = "Accessibility API (Recommended)",
-                    badge = "Fingerprint Safe",
-                    badgeColor = EmeraldActive,
-                    description = "Locks screen while keeping biometric & fingerprint reader unlock fully functional without prompting for PIN.",
-                    isSelected = uiState.lockMethod == PreferencesManager.METHOD_ACCESSIBILITY,
-                    onClick = {
-                        onSetLockMethod(PreferencesManager.METHOD_ACCESSIBILITY)
-                        if (!uiState.isAccessibilityEnabled) {
-                            onOpenAccessibilitySettings()
-                        }
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Method 2: Device Admin
-                MethodOptionRow(
-                    title = "Device Administrator",
-                    badge = "Legacy Support",
-                    badgeColor = AmberWarning,
-                    description = "Uses DevicePolicyManager.lockNow(). Designed for older Android versions. (Note: May require PIN/password on unlock).",
-                    isSelected = uiState.lockMethod == PreferencesManager.METHOD_DEVICE_ADMIN,
-                    onClick = {
-                        onSetLockMethod(PreferencesManager.METHOD_DEVICE_ADMIN)
-                        if (!uiState.isDeviceAdminEnabled) {
-                            onOpenDeviceAdminSettings()
-                        }
-                    }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Android 13+ Restricted Setting Notice & Quick Fix
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, AmberWarning.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Info,
+                        Icons.Default.AccessibilityNew,
                         contentDescription = null,
-                        tint = AmberWarning,
-                        modifier = Modifier.size(22.dp)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Android 13+ 'Restricted Setting' Fix",
+                        text = "Android Accessibility Service",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -181,33 +243,28 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "If Android shows 'Restricted setting: For your security, this setting is unavailable' when enabling Screen Off:\n" +
-                            "1. Tap 'Open App Info' below\n" +
-                            "2. Tap the three dots (⋮) in the top-right corner\n" +
-                            "3. Tap 'Allow restricted settings'\n" +
-                            "4. Verify your phone PIN or fingerprint\n" +
-                            "5. Return and toggle Accessibility ON.",
+                    text = "Screen Off exclusively uses Android's official Accessibility API (GLOBAL_ACTION_LOCK_SCREEN). This turns off your screen while keeping your fingerprint sensor active for instant unlocking without entering your PIN.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 20.sp
+                    lineHeight = 19.sp
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedButton(
-                    onClick = onOpenAppInfoSettings,
+                    onClick = onOpenAccessibilitySettings,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("btn_settings_open_app_info")
+                        .testTag("btn_open_accessibility_settings")
                 ) {
-                    Text("Open App Info (Tap ⋮ for Restricted Settings)")
+                    Text(if (uiState.isAccessibilityEnabled) "Accessibility Service Active ✓" else "Configure Accessibility Service")
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Section: Appearance
+        // SECTION 3: Appearance
         SettingsSectionHeader(title = "Appearance & Theme")
 
         Card(
@@ -271,8 +328,8 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Section: System Features & Shortcuts
-        SettingsSectionHeader(title = "Shortcuts & Controls")
+        // SECTION 4: System Shortcuts & Feedback
+        SettingsSectionHeader(title = "Controls & Feedback")
 
         Card(
             shape = RoundedCornerShape(18.dp),
@@ -282,10 +339,9 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                // Persistent Notification Switch
                 SettingsToggleRow(
-                    title = "Quick Notification Controls",
-                    description = "Show Lock and Power Menu buttons in notification pull-down shade",
+                    title = "Notification Shade Controls",
+                    description = "Show Lock and Power Menu buttons in notification pull-down",
                     icon = Icons.Default.Notifications,
                     checked = uiState.persistentNotificationEnabled,
                     onCheckedChange = onSetPersistentNotification,
@@ -294,41 +350,20 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Vibration feedback switch
                 SettingsToggleRow(
                     title = "Haptic Tactile Feedback",
-                    description = "Vibrate softly when screen is locked or power dialog is triggered",
+                    description = "Subtle vibration when screen locks or keypad digits are pressed",
                     icon = Icons.Default.Vibration,
                     checked = uiState.vibrationEnabled,
                     onCheckedChange = onSetVibration,
                     testTag = "switch_vibration"
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Biometric App Protection switch
-                SettingsToggleRow(
-                    title = "Biometric App Protection",
-                    description = "Require fingerprint authentication before modifying device administration",
-                    icon = Icons.Default.Fingerprint,
-                    checked = uiState.biometricProtectionEnabled,
-                    onCheckedChange = { enable ->
-                        if (enable && uiState.biometricStatus.isAvailable) {
-                            onPromptBiometric {
-                                onSetBiometricProtection(true)
-                            }
-                        } else {
-                            onSetBiometricProtection(false)
-                        }
-                    },
-                    testTag = "switch_biometric_protection"
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Section: Digital Assistant Integration
+        // SECTION 5: Digital Assistant Integration
         SettingsSectionHeader(title = "Default Digital Assistant")
 
         Card(
@@ -348,7 +383,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Lock with Home Button Gesture",
+                        text = "Lock via Home Button Long-Press",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -358,7 +393,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Set Screen Off as your default digital assistant app. Once selected, long-pressing the home button or swiping up from bottom screen corners will immediately lock your screen without physical buttons.",
+                    text = "Set Screen Off as your default digital assistant to lock instantly when long-pressing the home button or swiping diagonally from bottom corners.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -371,127 +406,12 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .testTag("btn_default_assistant_settings")
                 ) {
-                    Text("Configure Default Assistant App")
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Section: Device Administrator Lifecycle & Removal Helper
-        SettingsSectionHeader(title = "Lifecycle & Uninstallation Helper")
-
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, AmberWarning.copy(alpha = 0.3f), RoundedCornerShape(18.dp))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Security,
-                        contentDescription = null,
-                        tint = AmberWarning,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Device Administrator Guide & Removal",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "If you enabled Device Administrator and wish to uninstall the app or revoke the permission, Android security requires deactivating it first.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { showUninstallHelperDialog = true },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("btn_show_uninstall_instructions")
-                    ) {
-                        Text("Removal Instructions")
-                    }
-
-                    if (uiState.isDeviceAdminEnabled) {
-                        Button(
-                            onClick = {
-                                if (uiState.biometricProtectionEnabled) {
-                                    onPromptBiometric {
-                                        ScreenOffDeviceAdminReceiver.removeAdmin(context)
-                                    }
-                                } else {
-                                    ScreenOffDeviceAdminReceiver.removeAdmin(context)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
-                            ),
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("btn_deactivate_admin")
-                        ) {
-                            Text("Deactivate Admin")
-                        }
-                    }
+                    Text("Select Screen Off as Assistant")
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(30.dp))
-    }
-
-    if (showUninstallHelperDialog) {
-        AlertDialog(
-            onDismissRequest = { showUninstallHelperDialog = false },
-            title = {
-                Text("How to Remove Device Admin", fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Column {
-                    Text(
-                        text = "On older versions of Android, or if you enabled Device Administrator:\n\n" +
-                                "1. Open device Settings\n" +
-                                "2. Go to 'Security' (or 'Location & Security')\n" +
-                                "3. Tap 'Device administrators' (or 'Device admin apps')\n" +
-                                "4. Uncheck 'Screen Off' and confirm deactivation\n" +
-                                "5. You can now uninstall the app normally.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        lineHeight = 22.sp
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    showUninstallHelperDialog = false
-                    onOpenDeviceAdminSettings()
-                }) {
-                    Text("Open Device Admin Settings")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUninstallHelperDialog = false }) {
-                    Text("Close")
-                }
-            }
-        )
     }
 }
 
@@ -504,73 +424,6 @@ fun SettingsSectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(bottom = 8.dp)
     )
-}
-
-@Composable
-fun MethodOptionRow(
-    title: String,
-    badge: String,
-    badgeColor: androidx.compose.ui.graphics.Color,
-    description: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(8.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Icon(
-            imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
-            contentDescription = null,
-            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .padding(top = 2.dp)
-                .size(22.dp)
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(badgeColor.copy(alpha = 0.15f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = badgeColor,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
 }
 
 @Composable

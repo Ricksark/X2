@@ -6,7 +6,6 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.widget.Toast
 import com.example.MainActivity
-import com.example.receiver.ScreenOffDeviceAdminReceiver
 import com.example.util.LockManager
 import com.example.util.LockResult
 
@@ -19,13 +18,12 @@ class LockTileService : TileService() {
 
     private fun updateTileState() {
         val tile = qsTile ?: return
-        val isReady = LockAccessibilityService.isAccessibilityEnabled(this) ||
-                ScreenOffDeviceAdminReceiver.isDeviceAdminActive(this)
+        val isReady = LockAccessibilityService.isAccessibilityEnabled(this)
 
         tile.state = if (isReady) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.label = "Lock Screen"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            tile.subtitle = if (isReady) "Tap to lock" else "Permission required"
+            tile.subtitle = if (isReady) "Tap to lock" else "Accessibility required"
         }
         tile.updateTile()
     }
@@ -38,7 +36,7 @@ class LockTileService : TileService() {
                 // Screen locked
             }
             is LockResult.PermissionRequired -> {
-                Toast.makeText(this, "Screen Off needs Accessibility or Device Admin permission", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Screen Off needs Accessibility Service enabled", Toast.LENGTH_LONG).show()
                 val intent = Intent(this, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }

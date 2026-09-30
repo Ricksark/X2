@@ -45,18 +45,14 @@ import com.example.util.BiometricStatus
 @Composable
 fun ServiceStatusBanner(
     isAccessibilityActive: Boolean,
-    isDeviceAdminActive: Boolean,
     onEnableAccessibility: () -> Unit,
-    onEnableDeviceAdmin: () -> Unit,
     onFixRestrictedSettings: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val isAnyActive = isAccessibilityActive || isDeviceAdminActive
-
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isAnyActive) {
+            containerColor = if (isAccessibilityActive) {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
             } else {
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
@@ -66,7 +62,7 @@ fun ServiceStatusBanner(
             .fillMaxWidth()
             .border(
                 width = 1.dp,
-                color = if (isAnyActive) EmeraldActive.copy(alpha = 0.4f) else AmberWarning.copy(alpha = 0.5f),
+                color = if (isAccessibilityActive) EmeraldActive.copy(alpha = 0.4f) else AmberWarning.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(20.dp)
             )
             .testTag("service_status_banner")
@@ -84,11 +80,11 @@ fun ServiceStatusBanner(
                         modifier = Modifier
                             .size(12.dp)
                             .clip(CircleShape)
-                            .background(if (isAnyActive) EmeraldActive else AmberWarning)
+                            .background(if (isAccessibilityActive) EmeraldActive else AmberWarning)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = if (isAnyActive) "Screen Off Engine Ready" else "Permission Required",
+                        text = if (isAccessibilityActive) "Screen Off Ready" else "Accessibility Required",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -107,20 +103,17 @@ fun ServiceStatusBanner(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = when {
-                    isAccessibilityActive ->
-                        "Accessibility Service is running. You can lock instantly and unlock using your fingerprint reader without needing a PIN."
-                    isDeviceAdminActive ->
-                        "Device Administrator is active. Screen will lock immediately. (Note: On stock Android, admin lock may prompt for PIN upon unlocking)."
-                    else ->
-                        "To lock your screen without physical buttons, please grant Accessibility permission (recommended for fingerprint unlock) or Device Administrator."
+                text = if (isAccessibilityActive) {
+                    "Accessibility Service is running. You can lock your screen instantly and unlock using your fingerprint reader without typing a PIN."
+                } else {
+                    "Screen Off uses Android's Accessibility API to lock your screen cleanly while keeping your fingerprint reader unlock active."
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
             )
 
-            AnimatedVisibility(visible = !isAnyActive) {
+            AnimatedVisibility(visible = !isAccessibilityActive) {
                 Column(modifier = Modifier.padding(top = 14.dp)) {
                     Button(
                         onClick = onEnableAccessibility,
@@ -134,18 +127,7 @@ fun ServiceStatusBanner(
                     ) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Enable Accessibility Service (Recommended)")
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedButton(
-                        onClick = onEnableDeviceAdmin,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("btn_grant_device_admin")
-                    ) {
-                        Text("Use Device Administrator Instead")
+                        Text("Enable Accessibility Service")
                     }
 
                     if (onFixRestrictedSettings != null) {
@@ -158,7 +140,7 @@ fun ServiceStatusBanner(
                         ) {
                             Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = AmberWarning)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Seeing 'Restricted setting'? Tap to fix")
+                            Text("See 'Restricted setting'? Tap to allow")
                         }
                     }
                 }

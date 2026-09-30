@@ -9,8 +9,8 @@ import com.example.data.MethodCount
 import com.example.data.PreferencesManager
 import com.example.data.ScreenLockEntity
 import com.example.data.SourceCount
-import com.example.receiver.ScreenOffDeviceAdminReceiver
 import com.example.service.LockAccessibilityService
+import com.example.ui.screens.PinScreenMode
 import com.example.util.BiometricHelper
 import com.example.util.BiometricStatus
 import com.example.util.LockManager
@@ -25,15 +25,17 @@ import kotlinx.coroutines.launch
 
 data class MainUiState(
     val isAccessibilityEnabled: Boolean = false,
-    val isDeviceAdminEnabled: Boolean = false,
     val biometricStatus: BiometricStatus = BiometricStatus.UNKNOWN,
     val isAndroid9Plus: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P,
-    val lockMethod: String = PreferencesManager.METHOD_ACCESSIBILITY,
     val vibrationEnabled: Boolean = true,
     val persistentNotificationEnabled: Boolean = false,
-    val biometricProtectionEnabled: Boolean = false,
     val themeMode: String = "SYSTEM",
     val isOnboardingCompleted: Boolean = false,
+    val isPinSet: Boolean = false,
+    val isAppLockEnabled: Boolean = false,
+    val isBiometricUnlockEnabled: Boolean = true,
+    val isAppUnlocked: Boolean = false,
+    val pinSetupMode: PinScreenMode? = null,
     val lastMessage: String? = null
 )
 
@@ -42,8 +44,16 @@ class MainViewModel : ViewModel() {
     private val app = ScreenOffApp.instance
     private val dao = app.database.screenLockDao()
     private val prefs = app.preferencesManager
+    private val pinManager = app.pinSecurityManager
 
-    private val _uiState = MutableStateFlow(MainUiState())
+    private val _uiState = MutableStateFlow(
+        MainUiState(
+            isPinSet = pinManager.isPinSet(),
+            isAppLockEnabled = pinManager.isAppLockEnabled(),
+            isBiometricUnlockEnabled = pinManager.isBiometricUnlockEnabled(),
+            isAppUnlocked = !pinManager.isAppLockEnabled() // Unlocked if lock is disabled
+        )
+    )
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     val totalLocks: StateFlow<Int> = dao.getTotalLockCount()
@@ -63,11 +73,6 @@ class MainViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            prefs.lockMethod.collect { method ->
-                _uiState.value = _uiState.value.copy(lockMethod = method)
-            }
-        }
-        viewModelScope.launch {
             prefs.vibrationFeedback.collect { vib ->
                 _uiState.value = _uiState.value.copy(vibrationEnabled = vib)
             }
@@ -75,11 +80,6 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             prefs.persistentNotification.collect { notif ->
                 _uiState.value = _uiState.value.copy(persistentNotificationEnabled = notif)
-            }
-        }
-        viewModelScope.launch {
-            prefs.biometricProtection.collect { bio ->
-                _uiState.value = _uiState.value.copy(biometricProtectionEnabled = bio)
             }
         }
         viewModelScope.launch {
@@ -92,22 +92,55 @@ class MainViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(isOnboardingCompleted = comp)
             }
         }
+        refreshSecurityState()
     }
 
     fun refreshStatus(context: Context) {
         val access = LockAccessibilityService.isAccessibilityEnabled(context)
-        val admin = ScreenOffDeviceAdminReceiver.isDeviceAdminActive(context)
         val bioStatus = BiometricHelper.getBiometricStatus(context)
+        refreshSecurityState()
 
         _uiState.value = _uiState.value.copy(
             isAccessibilityEnabled = access,
-            isDeviceAdminEnabled = admin,
             biometricStatus = bioStatus
         )
     }
 
-    fun setLockMethod(method: String) {
-        prefs.setLockMethod(method)
+    fun refreshSecurityState() {
+        val pinSet = pinManager.isPinSet()
+        val appLockEnabled = pinManager.isAppLockEnabled()
+        val bioEnabled = pinManager.isBiometricUnlockEnabled()
+
+        _uiState.value = _uiState.value.copy(
+            isPinSet = pinSet,
+            isAppLockEnabled = appLockEnabled,
+            isBiometricUnlockEnabled = bioEnabled,
+            isAppUnlocked = if (!appLockEnabled) true else _uiState.value.isAppUnlocked
+        )
+    }
+
+    fun unlockAppSession() {
+        _uiState.value = _uiState.value.copy(isAppUnlocked = true)
+    }
+
+    fun lockAppSession() {
+        if (pinManager.isAppLockEnabled()) {
+            _uiState.value = _uiState.value.copy(isAppUnlocked = false)
+        }
+    }
+
+    fun openPinSetup(mode: PinScreenMode) {
+        _uiState.value = _uiState.value.copy(pinSetupMode = mode)
+    }
+
+    fun closePinSetup() {
+        _uiState.value = _uiState.value.copy(pinSetupMode = null)
+        refreshSecurityState()
+    }
+
+    fun setBiometricUnlockEnabled(enabled: Boolean) {
+        pinManager.setBiometricUnlockEnabled(enabled)
+        refreshSecurityState()
     }
 
     fun setVibration(enabled: Boolean) {
@@ -117,10 +150,6 @@ class MainViewModel : ViewModel() {
     fun setPersistentNotification(context: Context, enabled: Boolean) {
         prefs.setPersistentNotification(enabled)
         NotificationHelper.updatePersistentNotification(context, enabled)
-    }
-
-    fun setBiometricProtection(enabled: Boolean) {
-        prefs.setBiometricProtection(enabled)
     }
 
     fun setThemeMode(mode: String) {
@@ -135,10 +164,10 @@ class MainViewModel : ViewModel() {
         val result = LockManager.executeLock(context, triggerSource = "In-App Test Button")
         when (result) {
             is LockResult.Success -> {
-                _uiState.value = _uiState.value.copy(lastMessage = "Screen lock triggered successfully using ${result.methodUsed}")
+                _uiState.value = _uiState.value.copy(lastMessage = "Screen locked successfully (${result.methodUsed})")
             }
             is LockResult.PermissionRequired -> {
-                _uiState.value = _uiState.value.copy(lastMessage = "Permission Required: Please enable ${result.missingMethod}")
+                _uiState.value = _uiState.value.copy(lastMessage = "Permission Required: ${result.missingMethod}")
             }
             is LockResult.Error -> {
                 _uiState.value = _uiState.value.copy(lastMessage = result.message)

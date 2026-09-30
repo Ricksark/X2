@@ -6,9 +6,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import com.example.ScreenOffApp
-import com.example.data.PreferencesManager
 import com.example.data.ScreenLockEntity
-import com.example.receiver.ScreenOffDeviceAdminReceiver
 import com.example.service.LockAccessibilityService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,46 +24,19 @@ object LockManager {
         context: Context,
         triggerSource: String = "App Action"
     ): LockResult {
-        val app = ScreenOffApp.instance
-        val prefMethod = app.preferencesManager.getActiveLockMethod()
-        var methodUsed = ""
-        var success = false
-
-        if (prefMethod == PreferencesManager.METHOD_ACCESSIBILITY) {
-            val accessibilityService = LockAccessibilityService.instance
-            if (accessibilityService != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                success = accessibilityService.lockScreen()
-                methodUsed = "Accessibility API"
-            } else if (ScreenOffDeviceAdminReceiver.isDeviceAdminActive(context)) {
-                // Fallback to Device Admin if accessibility is not running
-                success = ScreenOffDeviceAdminReceiver.lockNow(context)
-                methodUsed = "Device Administrator (Fallback)"
+        val accessibilityService = LockAccessibilityService.instance
+        return if (accessibilityService != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val success = accessibilityService.lockScreen()
+            if (success) {
+                triggerHaptic(context)
+                logEvent(triggerSource, "Accessibility API", "Lock Screen", true)
+                LockResult.Success("Accessibility API")
             } else {
-                return LockResult.PermissionRequired("Accessibility Service or Device Administrator")
+                logEvent(triggerSource, "Accessibility API", "Lock Screen", false)
+                LockResult.Error("Failed to trigger screen lock")
             }
         } else {
-            // User preferred Device Admin
-            if (ScreenOffDeviceAdminReceiver.isDeviceAdminActive(context)) {
-                success = ScreenOffDeviceAdminReceiver.lockNow(context)
-                methodUsed = "Device Administrator"
-            } else {
-                val accessibilityService = LockAccessibilityService.instance
-                if (accessibilityService != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    success = accessibilityService.lockScreen()
-                    methodUsed = "Accessibility API (Fallback)"
-                } else {
-                    return LockResult.PermissionRequired("Device Administrator")
-                }
-            }
-        }
-
-        if (success) {
-            triggerHaptic(context)
-            logEvent(triggerSource, methodUsed, "Lock Screen", true)
-            return LockResult.Success(methodUsed)
-        } else {
-            logEvent(triggerSource, methodUsed.ifEmpty { "None" }, "Lock Screen", false)
-            return LockResult.Error("Failed to trigger screen lock")
+            LockResult.PermissionRequired("Accessibility Service (Required for Fingerprint-Safe Lock)")
         }
     }
 
@@ -84,7 +55,7 @@ object LockManager {
                 LockResult.Error("Could not show power dialog")
             }
         } else {
-            LockResult.PermissionRequired("Accessibility Service (Power Menu requires Accessibility)")
+            LockResult.PermissionRequired("Accessibility Service (Required for Power Menu)")
         }
     }
 

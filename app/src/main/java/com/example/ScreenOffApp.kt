@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Build
 import com.example.data.AppDatabase
 import com.example.data.PreferencesManager
+import com.example.util.PinSecurityManager
 
 class ScreenOffApp : Application() {
 
@@ -16,11 +17,15 @@ class ScreenOffApp : Application() {
     lateinit var preferencesManager: PreferencesManager
         private set
 
+    lateinit var pinSecurityManager: PinSecurityManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         database = AppDatabase.getInstance(this)
         preferencesManager = PreferencesManager(this)
+        pinSecurityManager = PinSecurityManager(this)
 
         createNotificationChannels()
     }
